@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI PPT 智能创作平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#FFF0F3', 100: '#FFE4E9', 200: '#FECDD6', 300: '#FDA4B4', 400: '#FB7185', 500: '#F43F5E', 600: '#E11D48', 700: '#BE123C' },
+            accent: { 50: '#F5F3FF', 100: '#EDE9FE', 200: '#DDD6FE', 300: '#C4B5FD', 400: '#A78BFA', 500: '#8B5CF6', 600: '#7C3AED', 700: '#6D28D9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-brand { background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F43F5E 100%); }
+    .gradient-brand-light { background: linear-gradient(135deg, #F5F3FF 0%, #FFF0F3 100%); }
+    .text-gradient-brand { background: linear-gradient(90deg, #EC4899 0%, #F43F5E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .gradient-red-btn { background: linear-gradient(90deg, #F43F5E 0%, #FB7185 100%); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    .glass { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); }
+  </style>
+</head>
+<body class="bg-[#FAFAFB] text-gray-800 h-screen w-screen overflow-hidden font-sans text-sm">
+<div id="app"></div>
+<script>
+let view = 'home'; // home | overview | editor
+let homeTab = 'word';
+let selectedSlide = 0;
+function $(sel) { return document.querySelector(sel); }
+function render() {
+  const app = $('#app');
+  app.innerHTML = '';
+  if (view === 'home') app.appendChild(renderHome());
+  else if (view === 'overview') app.appendChild(renderStudio('overview'));
+  else app.appendChild(renderStudio('editor'));
+  if (window.lucide) lucide.createIcons();
+}
+/* ========================= 首页 ========================= */
+function renderHome() {
+  const root = document.createElement('div');
+  root.className = 'flex h-full w-full';
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'w-56 bg-white border-r border-gray-100 flex flex-col py-5 flex-shrink-0';
+  const navItems = [
+    {icon:'home', label:'首页', active:true},
+    {icon:'folder', label:'我的文档'},
+    {icon:'layout-grid', label:'模板中心'},
+    {icon:'image', label:'素材库'},
+    {icon:'wand-2', label:'智能工具'},
+    {icon:'shield', label:'品牌中心'},
+    {icon:'users', label:'团队协作'},
+    {icon:'trash-2', label:'回收站'},
+    {icon:'settings', label:'设置'},
+  ];
+  sidebar.innerHTML = `
+    <div class="px-5 mb-8 flex items-center gap-2.5">
+      <div class="w-9 h-9 gradient-brand rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm">P</div>
+      <div>
+        <div class="font-bold text-gray-900 text-sm leading-tight">AI PPT</div>
+        <div class="text-[11px] text-gray-400 leading-tight">智能创作平台</div>
+      </div>
+    </div>
+    <nav class="flex-1 px-3 space-y-0.5">
+      ${navItems.map(n => `
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${n.active ? 'text-brand-500 bg-brand-50 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}">
+          <i data-lucide="${n.icon}" class="w-4.5 h-4.5 ${n.active ? 'text-brand-500' : 'text-gray-400'}"></i>
+          <span class="text-[13px]">${n.label}</span>
+        </div>
+      `).join('')}
+    </nav>
+    <div class="px-4 mt-auto">
+      <button class="w-full py-3 gradient-red-btn text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 shadow-lg shadow-brand-200 hover:shadow-xl hover:scale-[1.02] transition-all">
+        <i data-lucide="plus" class="w-4 h-4"></i> 创建
+      </button>
+    </div>
+  `;
+  const main = document.createElement('main');
+  main.className = 'flex-1 flex flex-col min-w-0 bg-[#FAFAFB] overflow-auto';
+  const header = document.createElement('header');
+  header.className = 'h-16 flex items-center justify-end px-8 gap-4 flex-shrink-0';
+  header.innerHTML = `
+    <button class="relative w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full hover:bg-white transition-colors">
+      <i data-lucide="bell" class="w-5 h-5"></i>
+      <span class="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FAFAFB]"></span>
+    </button>
+    <div class="w-9 h-9 bg-gray-200 rounded-full overflow-hidden border border-gray-100 cursor-pointer">
+      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-full h-full object-cover">
+    </div>
+  `;
+  const content = document.createElement('div');
+  content.className = 'px-8 pb-10 max-w-4xl mx-auto w-full';
+  const isWord = homeTab === 'word';
+  const isBeautify = homeTab === 'beautify';
+  const isImage = homeTab === 'image';
+  content.innerHTML = `
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-black text-gray-900 tracking-tight mb-2">
+        <span class="text-gradient-brand italic">AI</span> 智能生成 PPT
+      </h1>
+      <p class="text-gray-500 text-sm">AI 驱动，一键生成专业级演示文稿，让表达更高效</p>
+    </div>
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80 mb-6">
+      <div class="inline-flex bg-gray-100/60 p-1 rounded-xl mb-6">
+        <button onclick="setHomeTab('word')" class="px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${isWord ? 'gradient-brand text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}">
+          <i data-lucide="file-text" class="w-4 h-4"></i> Word 转 PPT
+        </button>
+        <button onclick="setHomeTab('beautify')" class="px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${isBeautify ? 'gradient-brand text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> 美化 PPT
+        </button>
+        <button onclick="setHomeTab('image')" class="px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${isImage ? 'gradient-brand text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}">
+          <i data-lucide="image" class="w-4 h-4"></i> 图片转 PPT
+        </button>
+      </div>
+      <div class="mb-5">
+        <label class="text-sm font-bold text-gray-800 mb-2 block">输入主题 <span class="text-gray-400 font-normal">（必填）</span></label>
+        <div class="relative">
+          <textarea placeholder="请输入 PPT 主题，例如：2024 年度工作总结汇报" class="w-full h-[80px] p-4 bg-gray-50/50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300 text-gray-700 text-sm placeholder:text-gray-400"></textarea>
+          <span class="absolute bottom-2.5 right-3 text-xs text-gray-400">0 / 100</span>
+        </div>
+      </div>
+      <div class="mb-5">
+        <label class="text-sm font-bold text-gray-800 mb-2 block">文件导入 <span class="text-gray-400 font-normal">（选填）</span></label>
+        <div class="flex gap-3">
+          <div class="flex-1 border border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center justify-center text-center hover:border-brand-300 hover:bg-brand-50/30 transition-colors cursor-pointer">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">W</div>
+              <div class="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>
+            </div>
+            <p class="text-xs text-gray-600 font-medium">点击上传或拖拽文件到此处</p>
+            <p class="text-[11px] text-gray-400 mt-1">支持 .docx / .pdf / .txt 格式，最大 50MB</p>
+          </div>
+          <div class="w-48 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center bg-gray-50/50">
+            <p class="text-xs text-gray-600 font-medium mb-2">添加参考资料</p>
+            <button class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 flex items-center gap-1.5 hover:border-brand-300 hover:text-brand-500 transition-colors shadow-sm">
+              <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> 上传文件
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-end gap-4">
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1.5 block">尺寸</label>
+          <button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 flex items-center gap-2 hover:border-gray-300 transition-colors min-w-[140px]">
+            <i data-lucide="monitor" class="w-4 h-4 text-gray-400"></i> 16:9（宽屏） <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400 ml-auto"></i>
+          </button>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1.5 block">页数</label>
+          <div class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <button class="px-3 py-2 hover:bg-gray-50 text-gray-500 transition-colors"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+            <span class="px-2 text-xs font-medium text-gray-700 w-8 text-center">20</span>
+            <button class="px-3 py-2 hover:bg-gray-50 text-gray-500 transition-colors"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+        <div class="flex-1"></div>
+        <button onclick="setView('overview')" class="px-8 py-2.5 gradient-brand text-white rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg shadow-brand-200 hover:shadow-xl hover:scale-[1.02] transition-all">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> 生成 PPT
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      ${[
+        {icon:'image-plus', bg:'bg-blue-50', iconColor:'text-blue-500', title:'图片生成', desc:'根据主题智能生成<br>高质量配图'},
+        {icon:'video', bg:'bg-rose-50', iconColor:'text-rose-500', title:'视频生成', desc:'一键生成匹配主题的<br>演示视频'},
+        {icon:'type', bg:'bg-purple-50', iconColor:'text-purple-500', title:'内容提炼', desc:'AI 智能提炼要点<br>生成结构化内容'},
+        {icon:'image', bg:'bg-orange-50', iconColor:'text-orange-500', title:'智能配图', desc:'自动匹配页面内容<br>推荐最佳配图'}
+      ].map(c => `
+        <div class="bg-white p-5 rounded-xl border border-gray-100 hover:shadow-md hover:border-brand-100 transition-all cursor-pointer group text-center">
+          <div class="w-11 h-11 ${c.bg} rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-200">
+            <i data-lucide="${c.icon}" class="w-5 h-5 ${c.iconColor}"></i>
+          </div>
+          <h3 class="font-bold text-gray-900 text-sm mb-1">${c.title}</h3>
+          <p class="text-[11px] text-gray-400 leading-relaxed mb-3">${c.desc}</p>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 mx-auto group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all"></i>
+        </div>
+      `).join('')}
+    </div>
+    <div class="grid grid-cols-4 gap-0 bg-white p-6 rounded-xl border border-gray-100">
+      ${[
+        {icon:'zap', bg:'bg-red-50', color:'text-red-500', title:'高效智能', desc:'AI 秒速生成，大幅<br>提升工作效率'},
+        {icon:'gem', bg:'bg-purple-50', color:'text-purple-500', title:'专业美观', desc:'专业设计风格，呈现<br>高质量视觉效果'},
+        {icon:'layout-grid', bg:'bg-blue-50', color:'text-blue-500', title:'多场景适用', desc:'覆盖多种场景，满足<br>不同演示需求'},
+        {icon:'shield-check', bg:'bg-emerald-50', color:'text-emerald-500', title:'安全可靠', desc:'数据安全保障，隐私<br>保护让您放心使用'}
+      ].map((f,idx) => `
+        <div class="flex flex-col items-center text-center ${idx < 3 ? 'border-r border-gray-100' : ''} px-2">
+          <div class="w-10 h-10 ${f.bg} rounded-full flex items-center justify-center mb-2">
+            <i data-lucide="${f.icon}" class="w-5 h-5 ${f.color}"></i>
+          </div>
+          <h4 class="text-sm font-bold text-gray-900 mb-1">${f.title}</h4>
+          <p class="text-[11px] text-gray-400 leading-relaxed">${f.desc}</p>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  main.appendChild(header);
+  main.appendChild(content);
+  root.appendChild(sidebar);
+  root.appendChild(main);
+  return root;
+}
+/* ========================= 工作室（总览+编辑） ========================= */
+function renderStudio(mode) {
+  const root = document.createElement('div');
+  root.className = 'flex h-full w-full';
+  const isOverview = mode === 'overview';
+  const studioNav = [
+    {icon:'layout', label:'页面', active: true},
+    {icon:'image', label:'模板'},
+    {icon:'folder-open', label:'素材'},
+    {icon:'bar-chart-2', label:'图表'},
+    {icon:'database', label:'数据'},
+    {icon:'puzzle', label:'插件'},
+    {icon:'settings', label:'设置'},
+    {icon:'help-circle', label:'帮助'},
+  ];
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 flex-shrink-0 z-10';
+  sidebar.innerHTML = `
+    <div class="mb-6 cursor-pointer" onclick="setView('home')">
+      <div class="w-9 h-9 gradient-brand rounded-lg flex items-center justify-center text-white font-bold shadow-sm">P</div>
+    </div>
+    <nav class="w-full flex flex-col items-center gap-1 flex-1">
+      ${studioNav.map(n => `
+        <div class="w-full flex flex-col items-center py-2 ${n.active ? 'text-brand-500 bg-brand-50/60 border-l-2 border-brand-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'} cursor-pointer transition-colors">
+          <i data-lucide="${n.icon}" class="w-[18px] h-[18px] mb-0.5"></i>
+          <span class="text-[10px] scale-90">${n.label}</span>
+        </div>
+      `).join('')}
+    </nav>
+    <div class="flex flex-col items-center gap-3 mb-2">
+      <button class="text-gray-400 hover:text-gray-600 transition-colors"><i data-lucide="sun" class="w-[18px] h-[18px]"></i></button>
+      <button class="text-gray-400 hover:text-gray-600 transition-colors"><i data-lucide="bell" class="w-[18px] h-[18px]"></i></button>
+    </div>
+  `;
+  const main = document.createElement('main');
+  main.className = 'flex-1 flex flex-col min-w-0 bg-[#FAFAFB] relative';
+  const header = document.createElement('header');
+  header.className = 'h-12 glass border-b border-gray-100 flex items-center justify-between px-4 flex-shrink-0 z-20';
+  header.innerHTML = `
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="setView('home')">
+        <div class="w-6 h-6 gradient-brand rounded-md flex items-center justify-center text-white font-bold text-xs">P</div>
+        <span class="font-bold text-gray-800 text-sm">AI PPT 创作平台</span>
+      </div>
+      <span class="px-2 py-0.5 bg-gray-100 rounded text-[11px] text-gray-500">${isOverview ? '缩略图模式（总览视图）' : '单页编辑模式（预览视图）'}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[11px] text-gray-400 mr-1">已保存</span>
+      <button class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
+      <button class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"><i data-lucide="redo-2" class="w-3.5 h-3.5"></i></button>
+      <button class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"><i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i></button>
+      <div class="h-4 w-px bg-gray-200 mx-1"></div>
+      <button class="px-2.5 py-1 text-gray-500 hover:text-gray-700 text-xs flex items-center gap-1 transition-colors"><i data-lucide="share-2" class="w-3 h-3"></i> 分享</button>
+      <button class="px-3 py-1 gradient-red-btn text-white rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all">导出</button>
+    </div>
+  `;
+  let canvas;
+  if (isOverview) {
+    canvas = document.createElement('div');
+    canvas.className = 'flex-1 overflow-auto p-6';
+    const slides = [
+      {title:'智能科技\n产品发布会', bg:'from-rose-100 to-pink-50', type:'cover'},
+      {title:'目录', items:['产品概述','核心功能','应用场景','技术架构','市场分析','未来规划'], type:'list'},
+      {title:'01\n产品概述', bg:'from-purple-100 to-pink-50', type:'section'},
+      {title:'产品定义', desc:'重新定义智能办公体验', type:'content'},
+      {title:'产品亮点', items:['智能生成','一键美化','多端同步'], type:'cards'},
+      {title:'市场分析', chart:true, type:'chart'},
+      {title:'02\n核心功能', bg:'from-blue-100 to-purple-50', type:'section'},
+      {title:'功能架构', items:['AI生成','智能排版','素材库'], type:'cards'},
+      {title:'核心优势', chart:true, type:'chart'},
+      {title:'技术架构', type:'diagram'},
+      {title:'应用场景', items:['企业汇报','学术答辩','产品发布'], type:'cards'},
+      {title:'03\n技术优势', bg:'from-sky-100 to-blue-50', type:'section'},
+    ];
+    canvas.innerHTML = `
+      <div class="max-w-5xl mx-auto">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-xs text-gray-500">
+            <span class="text-gray-400">演示文稿</span> <span class="mx-1">/</span> <span class="text-gray-700 font-medium">智能科技产品发布会</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 flex items-center gap-1.5 hover:border-brand-300 transition-colors shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新建页面
+            </button>
+            <button class="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:border-brand-300 transition-colors shadow-sm"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></button>
+            <button class="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-400 hover:border-gray-300 transition-colors shadow-sm"><i data-lucide="menu" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          ${slides.map((s,i) => `
+            <div class="group cursor-pointer" onclick="setView('editor', ${i})">
+              <div class="w-full bg-white rounded-lg border border-gray-100 hover:border-brand-300 hover:shadow-md transition-all overflow-hidden aspect-[4/3] relative p-3 flex flex-col ${s.bg ? 'bg-gradient-to-br ' + s.bg : ''}">
+                ${s.type==='cover' ? `
+                  <div class="absolute inset-0 bg-gradient-to-br from-rose-200/40 to-pink-100/40"></div>
+                  <div class="relative z-10 flex flex-col items-center justify-center h-full text-center">
+                    <div class="text-xs text-brand-500 font-medium mb-1 tracking-wider">SMART TECHNOLOGY</div>
+                    <h3 class="text-sm font-bold text-gray-800 leading-tight whitespace-pre-line">${s.title}</h3>
+                    <p class="text-[10px] text-gray-500 mt-2">创新科技 · 智领未来</p>
+                  </div>
+                ` : s.type==='section' ? `
+                  <div class="relative z-10 flex flex-col items-center justify-center h-full text-center">
+                    <div class="text-2xl font-black text-brand-400/80 mb-1">${s.title.split('\n')[0]}</div>
+                    <div class="text-sm font-bold text-gray-700">${s.title.split('\n')[1]}</div>
+                  </div>
+                ` : s.type==='list' ? `
+                  <h4 class="text-xs font-bold text-gray-800 mb-2">${s.title}</h4>
+                  <div class="space-y-1">
+                    ${s.items.map((it,idx) => `<div class="flex items-center gap-1.5 text-[10px] text-gray-600"><span class="w-3 h-3 rounded-full bg-brand-100 text-brand-500 flex items-center justify-center text-[8px] font-bold">${idx+1}</span>${it}</div>`).join('')}
+                  </div>
+                ` : s.type==='cards' ? `
+                  <h4 class="text-xs font-bold text-gray-800 mb-2">${s.title}</h4>
+                  <div class="grid grid-cols-3 gap-1.5">
+                    ${s.items.map(it => `<div class="bg-white/80 rounded p-1.5 text-center border border-gray-100"><div class="w-4 h-4 bg-brand-100 rounded mx-auto mb-1"></div><div class="text-[8px] text-gray-600">${it}</div></div>`).join('')}
+                  </div>
+                ` : s.type==='chart' ? `
+                  <h4 class="text-xs font-bold text-gray-800 mb-2">${s.title}</h4>
+                  <div class="flex items-center justify-center h-full">
+                    <div class="w-12 h-12 rounded-full border-4 border-brand-300 flex items-center justify-center text-xs font-bold text-brand-500">75%</div>
+                  </div>
+                ` : s.type==='diagram' ? `
+                  <h4 class="text-xs font-bold text-gray-800 mb-2">${s.title}</h4>
+                  <div class="space-y-1">
+                    <div class="h-4 bg-brand-100 rounded w-3/4"></div>
+                    <div class="h-4 bg-brand-50 rounded w-full"></div>
+                    <div class="h-4 bg-brand-100 rounded w-2/3"></div>
+                  </div>
+                ` : `
+                  <h4 class="text-xs font-bold text-gray-800 mb-1">${s.title}</h4>
+                  <p class="text-[10px] text-gray-500">${s.desc || ''}</p>
+                  <div class="mt-auto w-full h-16 bg-gradient-to-t from-gray-100 to-transparent rounded"></div>
+                `}
+                <div class="absolute top-2 left-2 w-5 h-5 bg-black/10 backdrop-blur-sm rounded-full flex items-center justify-center text-[10px] text-white font-bold">${i+1}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } else {
+    canvas = document.createElement('div');
+    canvas.className = 'flex-1 overflow-auto p-6 flex flex-col items-center';
+    canvas.innerHTML = `
+      <div class="w-full max-w-3xl mb-4">
+        <div class="flex items-center gap-1 text-xs text-gray-500 mb-2">
+          <span class="hover:text-brand-500 cursor-pointer" onclick="setView('overview')">演示文稿</span>
+          <span>/</span>
+          <span class="text-gray-700 font-medium">智能科技产品发布会</span>
+        </div>
+      </div>
+      <div class="w-full max-w-3xl bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative" style="aspect-ratio:16/9">
+        <div class="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50"></div>
+        <div class="absolute bottom-0 right-0 w-2/3 h-full bg-gradient-to-l from-red-200/30 to-transparent"></div>
+        <div class="absolute top-8 right-12 opacity-30">
+          <div class="grid grid-cols-6 gap-2">
+            ${Array(24).fill(0).map(()=>`<div class="w-1 h-1 bg-brand-300 rounded-full"></div>`).join('')}
+          </div>
+        </div>
+        <div class="relative z-10 flex flex-col items-center justify-center h-full text-center p-12">
+          <div class="text-xs text-brand-400 font-medium tracking-[0.3em] mb-3 uppercase">Smart Technology</div>
+          <h1 class="text-4xl font-black text-gray-900 mb-3 leading-tight">智能科技<br>产品发布会</h1>
+          <p class="text-sm text-gray-500 mb-8">创新科技 · 智领未来</p>
+          <div class="flex items-center gap-4 text-xs text-gray-400">
+            <span>汇报人：AI 助手</span>
+            <span>时间：2024.05.20</span>
+          </div>
+        </div>
+      </div>
+      <div class="w-full max-w-3xl mt-4 flex gap-2 overflow-x-auto pb-2">
+        ${Array(6).fill(0).map((_,i) => `
+          <div onclick="setView('editor', ${i})" class="flex-shrink-0 w-24 aspect-video bg-white rounded-lg border ${i===0 ? 'border-brand-400 ring-1 ring-brand-200' : 'border-gray-100 hover:border-gray-300'} cursor-pointer overflow-hidden relative">
+            <div class="w-full h-full bg-gradient-to-br from-rose-50 to-pink-50"></div>
+            ${i===0 ? '<div class="absolute inset-0 flex items-center justify-center text-[8px] text-gray-500 font-medium">封面</div>' : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  const rightSidebar = document.createElement('aside');
+  rightSidebar.className = 'w-64 bg-white border-l border-gray-100 flex-shrink-0 flex flex-col overflow-y-auto z-10';
+  rightSidebar.innerHTML = `
+    <div class="flex border-b border-gray-100">
+      <button class="flex-1 py-3 text-xs font-bold text-brand-500 border-b-2 border-brand-500 flex items-center justify-center gap-1">
+        <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> 属性
+      </button>
+      <button class="flex-1 py-3 text-xs font-medium text-gray-400 hover:text-gray-600 flex items-center justify-center gap-1 transition-colors">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI 助手
+      </button>
+    </div>
+    <div class="p-4 space-y-5">
+      <div>
+        <h4 class="text-xs font-bold text-gray-800 mb-2">页面布局</h4>
+        <button class="w-full flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-700 hover:border-gray-200 transition-colors">
+          <div class="flex items-center gap-2"><i data-lucide="monitor" class="w-4 h-4 text-gray-400"></i> 16:9</div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+        </button>
+        <div class="text-[11px] text-gray-400 mt-1.5 ml-1">自定义大小</div>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-gray-800 mb-2">背景设置</h4>
+        <button class="w-full flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-700 hover:border-gray-200 transition-colors mb-2">
+          <span>渐变背景</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+        </button>
+        <div class="grid grid-cols-5 gap-1.5">
+          ${['from-rose-200 to-pink-100','from-purple-200 to-pink-100','from-orange-200 to-rose-100','from-blue-200 to-purple-100','from-gray-200 to-gray-100'].map(g => 
+            `<div class="aspect-square rounded-md bg-gradient-to-br ${g} border border-gray-100 cursor-pointer hover:ring-2 hover:ring-brand-300 transition-all"></div>`
+          ).join('')}
+        </div>
+        <div class="text-[11px] text-brand-500 mt-1.5 text-right cursor-pointer hover:underline">更多背景</div>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-gray-800 mb-2">AI 功能</h4>
+        <div class="space-y-1">
+          ${[
+            {icon:'pen-tool', title:'AI 改稿', desc:'智能优化内容与排版'},
+            {icon:'image', title:'一键换图', desc:'自动替换页面图片'},
+            {icon:'palette', title:'样式调整', desc:'统一风格与配色'}
+          ].map(item => `
+            <button class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 text-left group transition-colors">
+              <div class="w-7 h-7 rounded-lg bg-brand-50 text-brand-500 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="${item.icon}" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-gray-800">${item.title}</div>
+                <div class="text-[11px] text-gray-400">${item.desc}</div>
+              </div>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-gray-800 mb-2">页面设置</h4>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-600">幻灯片编号</span>
+            <div class="w-8 h-4 bg-brand-500 rounded-full relative cursor-pointer"><div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow"></div></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-600">页脚信息</span>
+            <div class="w-8 h-4 bg-gray-200 rounded-full relative cursor-pointer"><div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow"></div></div>
+          </div>
+          <div class="flex items-center gap-2 mt-1">
+            <button class="w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:border-brand-300 transition-colors"><i data-lucide="arrow-left-right" class="w-3 h-3"></i></button>
+            <button class="w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-gray-400 hover:border-gray-300 transition-colors"><i data-lucide="arrow-up-down" class="w-3 h-3"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  const bottomPanel = document.createElement('div');
+  bottomPanel.className = 'bg-white border-t border-gray-100 p-3 flex-shrink-0 z-10';
+  bottomPanel.innerHTML = `
+    <div class="max-w-3xl mx-auto flex items-center gap-3">
+      <div class="relative flex-1">
+        <input type="text" placeholder="告诉 AI 你想修改什么..." class="w-full pl-9 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300 placeholder:text-gray-400">
+        <i data-lucide="sparkles" class="w-4 h-4 text-brand-400 absolute left-3 top-2"></i>
+        <button class="absolute right-1.5 top-1 w-7 h-7 gradient-red-btn rounded-lg flex items-center justify-center text-white shadow-sm hover:shadow transition-colors">
+          <i data-lucide="send" class="w-3 h-3"></i>
+        </button>
+      </div>
+      <div class="hidden md:flex items-center gap-1.5">
+        ${['优化排版','生成图表','扩写内容','总结提炼'].map(tag => 
+          `<button class="px-2.5 py-1.5 bg-gray-50 hover:bg-brand-50 hover:text-brand-500 border border-gray-100 rounded-lg text-[11px] text-gray-500 transition-colors">${tag}</button>`
+        ).join('')}
+      </div>
+    </div>
+  `;
+  if (!isOverview) {
+    const toolbar = document.createElement('div');
+    toolbar.className = 'h-10 bg-white border-b border-gray-100 flex items-center px-4 gap-0.5 flex-shrink-0';
+    toolbar.innerHTML = `
+      ${[
+        {icon:'type', label:'文本'},{icon:'square', label:'形状'},{icon:'bar-chart-2', label:'图表'},
+        {icon:'table', label:'表格'},{icon:'image', label:'媒体'},{icon:'layout-template', label:'主题'},{icon:'grid', label:'布局'}
+      ].map(t => `
+        <button class="flex items-center gap-1 px-2.5 py-1.5 rounded hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors text-xs">
+          <i data-lucide="${t.icon}" class="w-3.5 h-3.5"></i> ${t.label}
+        </button>
+      `).join('')}
+    `;
+    main.appendChild(toolbar);
+  }
+  main.appendChild(header);
+  main.appendChild(canvas);
+  main.appendChild(bottomPanel);
+  root.appendChild(sidebar);
+  root.appendChild(main);
+  root.appendChild(rightSidebar);
+  return root;
+}
+window.setView = function(v, slideIdx) {
+  view = v;
+  if (slideIdx !== undefined) selectedSlide = slideIdx;
+  render();
+};
+window.setHomeTab = function(t) { homeTab = t; render(); };
+render();
+</script>
+</body>
+</html>
