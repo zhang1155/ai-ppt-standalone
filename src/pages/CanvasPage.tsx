@@ -87,10 +87,10 @@ const EditorCanvas = () => {
                 type="button"
                 onClick={() => setActiveMenu(item.key)}
                 className={cn(
-                  "w-[52px] h-[52px] flex flex-col items-center justify-center rounded-xl transition-all relative group",
-                  activeMenu === item.key
-                    ? "bg-red-50 text-primary"
-                    : "text-gray-400 hover:text-primary hover:bg-red-50/50"
+"w-[52px] h-[52px] flex flex-col items-center justify-center rounded-xl transition-all relative group",
+                    activeMenu === item.key
+                      ? "bg-red-50 text-primary"
+                      : "text-gray-400 hover:text-primary hover:bg-red-50"
                 )}
               >
                 {activeMenu === item.key && (

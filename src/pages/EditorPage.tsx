@@ -45,7 +45,7 @@ const EditorPage = () => {
     <div className="flex min-h-screen bg-[#F8F9FA] font-sans" style={{ fontFamily: "'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif" }}>
       
       {/* ===== 左侧工具栏 ===== */}
-      <div className="w-[60px] bg-[#2D2D2D] flex flex-col items-center py-3 shrink-0 z-20">
+      <div className="w-[60px] bg-white border-r border-gray-100 flex flex-col items-center py-3 shrink-0 z-20">
         {tools.map((tool) => (
           <button
             key={tool.label}
@@ -54,8 +54,8 @@ const EditorPage = () => {
             className={cn(
               "w-12 h-12 flex flex-col items-center justify-center rounded-lg mb-1 transition-all relative",
               activeTool === tool.label 
-                ? "bg-[#3A3A3A] text-primary" 
-                : "text-gray-400 hover:text-gray-200 hover:bg-[#3A3A3A]"
+                ? "bg-red-50 text-primary" 
+                : "text-gray-400 hover:text-primary hover:bg-red-50"
             )}
           >
             {activeTool === tool.label && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full" />}
@@ -67,7 +67,7 @@ const EditorPage = () => {
           {['帮助', '设置'].map((label) => {
             const item = tools.find(t => t.label === label);
             return item ? (
-              <button key={label} type="button" className="w-12 h-12 flex flex-col items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 hover:bg-[#3A3A3A] transition-all">
+              <button key={label} type="button" className="w-12 h-12 flex flex-col items-center justify-center rounded-lg text-gray-400 hover:text-primary hover:bg-red-50 transition-all">
                 {item.icon}
                 <span className="text-[9px] mt-0.5">{label}</span>
               </button>
