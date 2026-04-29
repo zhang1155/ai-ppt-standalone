@@ -34,7 +34,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-/* ===== 首页 — 参考图1/5风格：红色系、白底、简洁现代 ===== */
+/* ===== 首页 — 红色系、白底、简洁现代 ===== */
 
 const HotTag = ({ label }: { label: string }) => (
   <span className="inline-block px-3 py-1 text-xs rounded-full border border-gray-200 text-gray-600 bg-white cursor-pointer hover:border-primary/40 hover:text-primary transition-all whitespace-nowrap">
@@ -71,6 +71,7 @@ const BenefitItem = ({ icon, title, desc }: { icon: React.ReactNode; title: stri
 const HomePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('word-to-ppt');
 
   const handleGenerate = () => {
     setLoading(true);
@@ -92,9 +93,9 @@ const HomePage = () => {
         </div>
       )}
 
-      <div className="max-w-[1100px] mx-auto px-10 py-8 flex flex-col bg-white min-h-screen" style={{ gap: '28px' }}>
+      <div className="max-w-[820px] mx-auto px-6 py-8 flex flex-col bg-white min-h-screen" style={{ gap: '28px' }}>
         
-        {/* ===== 🏆 标题区 - 参考图1风格 ===== */}
+        {/* ===== 🏆 标题区 ===== */}
         <section className="text-center">
           <div className="flex items-center justify-center gap-3 mb-1">
             <h1 className="text-[32px] font-extrabold tracking-tight text-[#222]">
@@ -107,11 +108,11 @@ const HomePage = () => {
           </p>
         </section>
 
-        {/* ===== 📋 核心输入区 - 参考图1布局 ===== */}
+        {/* ===== 📋 核心输入区 ===== */}
         <section>
           <Card className="border-0 p-6 rounded-[14px] bg-white" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
-            <Tabs defaultValue="word-to-ppt" className="w-full">
-              <div className="mb-5">
+            <Tabs defaultValue="word-to-ppt" className="w-full" onValueChange={setActiveTab}>
+              <div className="mb-5 flex justify-center">
                 <TabsList className="bg-gray-50 p-1 rounded-lg h-auto inline-flex gap-0">
                   <TabsTrigger 
                     value="word-to-ppt" 
@@ -134,8 +135,8 @@ const HomePage = () => {
                 </TabsList>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex-1 min-w-0">
+              <div className="flex justify-center gap-4">
+                <div className="w-full max-w-[560px] min-w-0">
                   <div className="relative">
                     <Textarea 
                       placeholder="请输入主题，例如：2025年 AI 行业趋势分析" 
@@ -152,30 +153,41 @@ const HomePage = () => {
                     ))}
                   </div>
 
-                  {/* 底部操作栏 */}
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
-                        <FileUp size={14} />
-                        从文件导入
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
-                        <Upload size={14} />
-                        上传参考
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
-                        <SlidersHorizontal size={14} />
-                        尺寸设置
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
-                        <FileDown size={14} />
-                        页数设置
-                      </Button>
+                  {/* 底部操作栏 — 根据Tab动态变化 */}
+                  <div className="flex items-center justify-center mt-4">
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                      {activeTab === 'image-to-ppt' ? (
+                        /* 图片转PPT - 只有1个按钮 */
+                        <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
+                          <FileUp size={14} />
+                          从文件导入
+                        </Button>
+                      ) : (
+                        /* Word转PPT / 美化PPT - 4个按钮 */
+                        <>
+                          <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
+                            <FileUp size={14} />
+                            从文件导入
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
+                            <Upload size={14} />
+                            上传参考
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
+                            <SlidersHorizontal size={14} />
+                            尺寸设置
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" className="rounded-lg border-gray-200 text-gray-500 h-8 text-xs gap-1.5 bg-white hover:bg-gray-50">
+                            <FileDown size={14} />
+                            页数设置
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* 生成按钮 - 醒目红色 */}
+                {/* 生成按钮 */}
                 <div className="shrink-0 flex items-start">
                   <Button 
                     type="button" 
@@ -191,9 +203,9 @@ const HomePage = () => {
           </Card>
         </section>
 
-        {/* ===== 🚀 功能区 - 4张卡片横排（图1风格） ===== */}
+        {/* ===== 🚀 功能区 - 4张卡片横排 ===== */}
         <section>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-[820px] mx-auto">
             <FeatureCard icon={<Image className="text-primary" size={22} />} title="图片生成" desc="AI 生成精美配图" />
             <FeatureCard icon={<Video className="text-primary" size={22} />} title="视频生成" desc="AI 一键生成视频" />
             <FeatureCard icon={<FileOutput className="text-primary" size={22} />} title="内容提炼" desc="提炼核心内容要点" />
@@ -201,46 +213,9 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* ===== ⭐ 推荐模板 - 横向滚动（保留） ===== */}
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-[#333]">推荐模板</h2>
-            <Badge className="bg-primary hover:brightness-110 rounded-full text-xs px-3.5 py-0.5 font-medium border-none text-white cursor-pointer transition-all">全部</Badge>
-            <div className="flex items-center gap-2 overflow-x-auto ml-3">
-              {['工作汇报', '述职竞聘', '营销推广', '党政风采', '毕业答辩', '校园招新'].map((cat, i) => (
-                <span key={cat} className={cn("text-xs whitespace-nowrap cursor-pointer px-3 py-1 rounded-full border transition-all", i === 0 ? "border-primary text-primary" : "border-gray-200 text-gray-500 hover:text-primary hover:border-primary/50")}>
-                  {cat}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-            {[
-              { bg: 'from-[#E53935] to-[#FF8A80]', title: '商务简约工作汇报', label: '月度/季度总结' },
-              { bg: 'from-[#D32F2F] to-[#FF5252]', title: '创意述职竞聘模版', label: '职场进阶利器' },
-              { bg: 'from-[#C62828] to-[#EF5350]', title: '互联网科技产品发布', label: '极简科技感' },
-              { bg: 'from-[#B71C1C] to-[#E57373]', title: '红色大气党政总结', label: '权威大气风格' },
-              { bg: 'from-[#E53935] via-[#EF5350] to-[#FFCDD2]', title: '极简风营销推广方案', label: '视觉聚焦' },
-              { bg: 'from-[#F44336] to-[#FF8A80]', title: '现代感校园招新演示', label: '活力四射' },
-            ].map((tpl, i) => (
-              <Link key={i} to="/canvas" className="min-w-[220px] snap-start">
-                <Card className="overflow-hidden group cursor-pointer border-0 hover:shadow-lg transition-all rounded-xl" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <div className={cn("h-[130px] bg-gradient-to-br relative flex items-center justify-center transition-all group-hover:scale-105", tpl.bg)}>
-                    <Layout className="text-white/20" size={40} />
-                  </div>
-                  <CardContent className="p-3.5 bg-white">
-                    <h4 className="font-semibold text-sm text-[#333] truncate">{tpl.title}</h4>
-                    <p className="text-xs text-gray-400 mt-0.5">{tpl.label}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== 🎯 底部优势区（图1风格） ===== */}
+        {/* ===== 🎯 底部优势区 ===== */}
         <section className="border-t border-gray-100 pt-6 mt-2">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 max-w-[820px] mx-auto">
             <BenefitItem icon={<Zap size={20} />} title="高效智能" desc="AI 加速创作，节省时间" />
             <BenefitItem icon={<Shield size={20} />} title="专业美观" desc="精美模板，专业设计" />
             <BenefitItem icon={<Clock size={20} />} title="多场景适用" desc="覆盖多种场景需求" />
