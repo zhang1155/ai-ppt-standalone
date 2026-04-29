@@ -1,559 +1,317 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  Image, 
-  Type, 
-  Sticker,
-  Sparkles,
-  Shuffle,
-  Sliders, 
-  Volume2, 
-  MoreHorizontal,
-  HelpCircle,
-  Settings,
-  Undo,
-  Redo,
-  Eye,
-  Download,
-  X,
-  Bot,
-  ArrowLeft,
-  Send,
-  Bold,
-  Italic,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Plus,
-  Minus,
-  Upload
+import {
+  Image, Type, Sticker, Sparkles, Shuffle, Sliders, Volume2, MoreHorizontal,
+  HelpCircle, Settings, Undo, Redo, Eye, Download, X, Bot, ArrowLeft,
+  Layout, Plus, BarChart3, Table2, Film, Palette, SquareDashed, User,
+  PenLine, Search, Send, Trash2, Move, RotateCcw, AlignLeft, AlignCenter, AlignRight,
+  Bold, Italic, Underline, Minus, Plus as PlusIcon, Music
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 
-// 左侧工具栏图标项
-const ToolbarIcon = ({ icon, label, active }: { icon: React.ReactNode, label: string, active?: boolean }) => (
-  <div 
-    className={cn(
-      "w-full h-[64px] flex flex-col items-center justify-center cursor-pointer transition-all relative group",
-      active ? "bg-[#FFF0F0] text-primary" : "text-[#999] hover:text-white hover:bg-[#3a3a3a]"
-    )}
-  >
-    {active && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary" />}
-    <div className={cn("flex items-center justify-center", active ? "text-primary" : "text-[#999] group-hover:text-white")}>
-      {React.cloneElement(icon as React.ReactElement<{size: number}>, { size: 24 })}
-    </div>
-    <span className="text-[12px] mt-1">{label}</span>
-  </div>
-);
-
-// 可选中的元素类型
-type ElementType = 'text' | 'image' | 'shape' | null;
+/* ===== 阶段三：单页编辑模式 — 参考图5风格 ===== */
 
 const EditorPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [selectedElement, setSelectedElement] = useState<ElementType>(null);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(true);
-  
-  // 元素属性状态
-  const [opacity, setOpacity] = useState([100]);
-  const [brightness, setBrightness] = useState([0]);
-  const [contrast, setContrast] = useState([0]);
-  const [saturation, setSaturation] = useState([0]);
-  const [fontSize, setFontSize] = useState(24);
+  const { id } = useParams();
+  const [activeTool, setActiveTool] = useState('页面');
+  const [selectedElement, setSelectedElement] = useState<'text' | 'image' | null>(null);
+  const [aiInput, setAiInput] = useState('');
+  const [showAiSearch, setShowAiSearch] = useState(false);
 
-  // 模拟PPT页面数据
-  const slides = [
-    { title: 'AI赋能智能办公新时代', gradient: 'bg-gradient-to-br from-[#E53935] via-[#FF6F00] to-[#FFD54F]' },
-    { title: '内容概览', gradient: 'bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#3949ab]' },
-    { title: '人工智能技术发展现状', gradient: 'bg-gradient-to-br from-[#4a148c] via-[#6a1b9a] to-[#8e24aa]' },
-    { title: '核心功能介绍', gradient: 'bg-gradient-to-br from-[#E53935] via-[#f4511e] to-[#ff6f00]' },
-    { title: '应用场景分析', gradient: 'bg-gradient-to-br from-[#00695c] via-[#00897b] to-[#26a69a]' },
-    { title: '数据趋势与洞察', gradient: 'bg-gradient-to-br from-[#ad1457] via-[#c2185b] to-[#d81b60]' },
-    { title: '解决方案与优势', gradient: 'bg-gradient-to-br from-[#b71c1c] via-[#c62828] to-[#d32f2f]' },
-    { title: '携手共创未来', gradient: 'bg-gradient-to-br from-[#f57f17] via-[#f9a825] to-[#212121]' },
+  const tools = [
+    { icon: <Layout size={20} />, label: '页面' },
+    { icon: <Image size={20} />, label: '模板' },
+    { icon: <Sparkles size={20} />, label: '素材' },
+    { icon: <BarChart3 size={20} />, label: '图表' },
+    { icon: <PenLine size={20} />, label: '文本' },
+    { icon: <Plus size={20} />, label: '插件' },
+    { icon: <Settings size={20} />, label: '设置' },
+    { icon: <HelpCircle size={20} />, label: '帮助' },
   ];
 
-  const currentSlide = slides[Number(id) - 1] || slides[0];
-
-  const handleElementClick = (type: ElementType) => {
+  const handleElementClick = (type: 'text' | 'image') => {
     setSelectedElement(type);
-    setAiPrompt('');
+    setShowAiSearch(true);
   };
 
-  const handleAiSubmit = () => {
-    if (!aiPrompt.trim()) return;
-    setAiLoading(true);
-    // 模拟AI生成
-    setTimeout(() => {
-      setAiLoading(false);
-      setAiPrompt('');
-      // 这里可以更新元素内容
-    }, 2000);
-  };
+  const sidebarTools = ['插入', '文本', '形状', '图表', '表格', '媒体', '主题', '布局'];
 
   return (
-    <div className="flex h-screen bg-[#f8f8f8] overflow-hidden" style={{ fontFamily: "'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif" }}>
+    <div className="flex min-h-screen bg-[#F8F9FA] font-sans" style={{ fontFamily: "'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif" }}>
       
-      {/* 左侧垂直工具栏 */}
-      <aside className="w-[60px] bg-[#2D2D2D] flex flex-col items-center py-4 shrink-0">
-        <div className="flex-1 flex flex-col w-full">
-          <ToolbarIcon icon={<Image />} label="素材" active />
-          <ToolbarIcon icon={<Type />} label="文本" />
-          <ToolbarIcon icon={<Sticker />} label="贴纸" />
-          <ToolbarIcon icon={<Sparkles />} label="特效" />
-          <ToolbarIcon icon={<Shuffle />} label="转场" />
-          <ToolbarIcon icon={<Sliders />} label="调节" />
-          <ToolbarIcon icon={<Volume2 />} label="音频" />
-          <ToolbarIcon icon={<MoreHorizontal />} label="更多" />
+      {/* ===== 左侧工具栏 ===== */}
+      <div className="w-[60px] bg-[#2D2D2D] flex flex-col items-center py-3 shrink-0 z-20">
+        {tools.map((tool) => (
+          <button
+            key={tool.label}
+            type="button"
+            onClick={() => setActiveTool(tool.label)}
+            className={cn(
+              "w-12 h-12 flex flex-col items-center justify-center rounded-lg mb-1 transition-all relative",
+              activeTool === tool.label 
+                ? "bg-[#3A3A3A] text-primary" 
+                : "text-gray-400 hover:text-gray-200 hover:bg-[#3A3A3A]"
+            )}
+          >
+            {activeTool === tool.label && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full" />}
+            {tool.icon}
+            <span className="text-[9px] mt-0.5">{tool.label}</span>
+          </button>
+        ))}
+        <div className="mt-auto flex flex-col items-center gap-1">
+          {['帮助', '设置'].map((label) => {
+            const item = tools.find(t => t.label === label);
+            return item ? (
+              <button key={label} type="button" className="w-12 h-12 flex flex-col items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 hover:bg-[#3A3A3A] transition-all">
+                {item.icon}
+                <span className="text-[9px] mt-0.5">{label}</span>
+              </button>
+            ) : null;
+          })}
         </div>
-        
-        <div className="flex flex-col w-full mt-auto">
-          <ToolbarIcon icon={<HelpCircle />} label="帮助" />
-          <ToolbarIcon icon={<Settings />} label="设置" />
-        </div>
-      </aside>
+      </div>
 
-      {/* 主内容区 */}
+      {/* ===== 主区域 ===== */}
       <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* 顶部导航栏 */}
-        <header className="h-[40px] bg-white border-b border-[#e8e8e8] flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-4">
-            {/* 返回按钮 */}
-            <Button 
-              type="button" 
-              onClick={() => navigate('/canvas')} 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-[#666] hover:text-primary"
-            >
-              <ArrowLeft size={18} />
-            </Button>
-            
-            {/* 面包屑 */}
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/" className="text-[#999] hover:text-primary text-[13px]">文件</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-[#999]">
-                  <span className="text-[13px]">{">"}</span>
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/canvas" className="text-[#999] hover:text-primary text-[13px]">我的项目</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-[#999]">
-                  <span className="text-[13px]">{">"}</span>
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="text-[#333] font-medium text-[13px]">第 {id} 页</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-            
-            {/* 自动保存状态 */}
-            <div className="flex items-center gap-2 ml-4">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              <span className="text-[12px] text-green-600 font-medium">已保存</span>
-            </div>
+
+        {/* 顶部工具栏 */}
+        <header className="h-11 bg-white border-b border-gray-100 flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => navigate('/canvas')} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <ArrowLeft size={16} />
+            </button>
+            <nav className="flex items-center gap-1 text-xs text-gray-400">
+              <button onClick={() => navigate('/')} className="hover:text-gray-600">文件</button>
+              <span>/</span>
+              <button onClick={() => navigate('/canvas')} className="hover:text-gray-600">我的项目</button>
+              <span>/</span>
+              <span className="text-gray-600 font-medium">第 {id} 页</span>
+            </nav>
+            <span className="flex items-center gap-1 text-[11px] text-green-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+              已保存
+            </span>
           </div>
-          
-          {/* 右侧按钮组 */}
-          <div className="flex items-center gap-2">
-            <Button type="button" onClick={() => {}} variant="ghost" size="icon" className="h-8 w-8 text-[#999] hover:text-[#333]">
-              <Undo size={16} />
+
+          <div className="flex items-center gap-1">
+            {/* 编辑工具栏 */}
+            <div className="hidden md:flex items-center gap-1 mr-4">
+              {sidebarTools.map((label) => (
+                <button key={label} type="button" className="px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-md transition-all">{label}</button>
+              ))}
+            </div>
+            <button type="button" className="px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1">
+              <Bot size={14} className="text-primary" /> AI助手
+            </button>
+            <Button type="button" variant="outline" size="sm" className="h-7 text-xs rounded-lg border-gray-200 text-gray-500">
+              <Eye size={13} className="mr-1" />演示
             </Button>
-            <Button type="button" onClick={() => {}} variant="ghost" size="icon" className="h-8 w-8 text-[#999] hover:text-[#333]">
-              <Redo size={16} />
-            </Button>
-            
-            <div className="w-px h-4 bg-[#e8e8e8] mx-1" />
-            
-            <Button type="button" onClick={() => {}} variant="outline" className="rounded-[6px] gap-2 border-[#ddd] bg-white text-[#666] px-3 py-0 h-8 text-[13px] font-medium hover:bg-[#FAFAFA]">
-              <Eye size={14} />
-              <span>预览</span>
-            </Button>
-            
-            <Button type="button" onClick={() => {}} className="bg-primary hover:brightness-110 text-white font-medium rounded-[6px] px-4 py-0 h-8 text-[13px] shadow-sm transition-all">
-              导出
-            </Button>
-            
-            <Button type="button" onClick={() => {}} className="bg-[#1677ff] hover:brightness-110 text-white font-medium rounded-[6px] px-4 py-0 h-8 text-[13px] shadow-sm transition-all">
-              <Download size={14} className="mr-1.5" />
-              下载
-            </Button>
+            <Button type="button" size="sm" className="h-7 text-xs rounded-lg bg-primary hover:brightness-110 text-white shadow-sm ml-1">分享</Button>
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold ml-2">晶</div>
           </div>
         </header>
 
-        {/* 中间单页放大展示区 */}
-        <main 
-          onClick={() => setSelectedElement(null)}
-          className="flex-1 overflow-y-auto px-6 py-6 flex items-center justify-center cursor-default"
-        >
-          <div className="w-[70%] max-w-[1000px]">
-            {/* PPT页面容器 */}
-            <div 
-              onClick={(e) => { e.stopPropagation(); handleElementClick('image'); }}
-              className={cn(
-                "aspect-video rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.12)] relative overflow-hidden cursor-pointer transition-all",
-                currentSlide.gradient,
-                selectedElement === 'image' && "ring-2 ring-primary ring-offset-2"
-              )}
-            >
-              {/* 背景渐变 */}
-              <div className="absolute inset-0" />
-              
-              {/* 标题文本元素（可点击选中） */}
-              <div 
-                onClick={(e) => { e.stopPropagation(); handleElementClick('text'); }}
-                className={cn(
-                  "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all z-10",
-                  selectedElement === 'text' && "border-2 border-primary"
-                )}
-              >
-                <h1 className="text-white text-4xl font-bold text-center drop-shadow-lg px-8 py-4">
-                  {currentSlide.title}
-                </h1>
-                
-                {/* 选中时的调整手柄 */}
-                {selectedElement === 'text' && (
-                  <>
-                    <div className="absolute -top-1 -left-1 w-3 h-3 bg-primary rounded-sm" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-sm" />
-                    <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-primary rounded-sm" />
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-sm" />
-                  </>
-                )}
+        {/* ===== 中间单页编辑器 ===== */}
+        <main className="flex-1 overflow-y-auto p-8 flex items-start justify-center">
+          <div className="relative w-full max-w-[900px]">
+            {/* 幻灯片缩放信息 */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-400">幻灯片 {id}/8</span>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="ghost" size="sm" className="w-6 h-6 p-0 text-gray-400"><Minus size={12} /></Button>
+                <span className="text-xs text-gray-500 font-mono">100%</span>
+                <Button type="button" variant="ghost" size="sm" className="w-6 h-6 p-0 text-gray-400"><PlusIcon size={12} /></Button>
               </div>
-              
-              {/* 装饰形状元素（可点击选中） */}
-              <div 
-                onClick={() => handleElementClick('shape')}
-                className={cn(
-                  "absolute bottom-8 right-8 w-24 h-24 border-4 border-white/30 rounded-full cursor-pointer transition-all",
-                  selectedElement === 'shape' && "border-primary"
-                )}
-              >
-                {selectedElement === 'shape' && (
-                  <>
-                    <div className="absolute -top-1 -left-1 w-3 h-3 bg-primary rounded-sm" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-sm" />
-                    <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-primary rounded-sm" />
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-sm" />
-                  </>
-                )}
-              </div>
-              
-              {/* 装饰线条元素 */}
-              <div className="absolute top-8 left-8 w-32 h-1 bg-white/50 rounded-full" />
             </div>
-            
-            {/* AI搜索框（选中元素时显示） */}
-            {selectedElement && (
-              <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <Card className="bg-white rounded-[12px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border-none">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Input 
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
+
+            {/* 幻灯片内容 — 参考图5红色调 */}
+            <div 
+              className="relative w-full rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-[#E53935] to-[#C62828] cursor-pointer"
+              style={{ aspectRatio: '16/9' }}
+              onClick={() => { setSelectedElement(null); setShowAiSearch(false); }}
+            >
+              {/* 可点击的文字元素 */}
+              <div 
+                className={cn(
+                  "absolute top-1/4 left-1/2 -translate-x-1/2 text-center cursor-pointer p-4 rounded-lg transition-all",
+                  selectedElement === 'text' ? 'ring-2 ring-primary ring-offset-2 ring-offset-red-900/50' : 'hover:ring-2 hover:ring-white/30 hover:ring-offset-2 hover:ring-offset-red-900/30'
+                )}
+                onClick={(e) => { e.stopPropagation(); handleElementClick('text'); }}
+              >
+                <h1 className="text-white font-extrabold text-3xl md:text-4xl drop-shadow-lg">
+                  AI赋能智能办公新时代
+                </h1>
+                <p className="text-white/80 text-sm md:text-base mt-3 drop-shadow-md">
+                  智能驱动·高效协同·创新未来
+                </p>
+              </div>
+
+              {/* 可点击的装饰元素 */}
+              <div 
+                className={cn(
+                  "absolute bottom-6 left-1/2 -translate-x-1/2 text-center cursor-pointer px-4 py-1.5 rounded-lg transition-all",
+                  selectedElement === 'image' ? 'ring-2 ring-primary ring-offset-2 ring-offset-red-900/50' : 'hover:ring-2 hover:ring-white/30 hover:ring-offset-2 hover:ring-offset-red-900/30'
+                )}
+                onClick={(e) => { e.stopPropagation(); handleElementClick('image'); }}
+              >
+                <p className="text-white/60 text-xs">
+                  AI智能幻灯片工作室 | 2024年6月
+                </p>
+              </div>
+
+              {/* 选中元素时调整手柄 */}
+              {selectedElement && (
+                <>
+                  <div className="absolute top-0 left-0 w-2 h-2 bg-white border border-primary rounded-sm -translate-x-1/2 -translate-y-1/2 shadow" />
+                  <div className="absolute top-0 right-0 w-2 h-2 bg-white border border-primary rounded-sm translate-x-1/2 -translate-y-1/2 shadow" />
+                  <div className="absolute bottom-0 left-0 w-2 h-2 bg-white border border-primary rounded-sm -translate-x-1/2 translate-y-1/2 shadow" />
+                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-white border border-primary rounded-sm translate-x-1/2 translate-y-1/2 shadow" />
+                  {/* 删除按钮 */}
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSelectedElement(null); setShowAiSearch(false); }}
+                    className="absolute -top-3 -right-3 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600 transition-all z-10"
+                  >
+                    <X size={12} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* AI搜索框 - 选中元素时弹出 */}
+            {showAiSearch && (
+              <div className="mt-4 animate-in slide-in-from-top-2 fade-in duration-200">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Bot size={16} className="text-primary" />
+                    <span className="text-xs font-semibold text-[#333]">AI 智能替换</span>
+                    <span className="text-[10px] text-gray-400">已选：{selectedElement === 'text' ? '文字元素' : '图片元素'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        value={aiInput}
+                        onChange={(e) => setAiInput(e.target.value)}
                         placeholder="告诉我你想要的需求"
-                        className="flex-1 h-10 text-[14px] border-[#e8e8e8] focus-visible:ring-1 focus-visible:ring-primary"
-                        disabled={aiLoading}
+                        className="w-full text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 outline-none focus:border-primary/50 focus:bg-white transition-all placeholder:text-gray-400"
                       />
-                      <Button 
-                        type="button"
-                        onClick={handleAiSubmit}
-                        disabled={aiLoading || !aiPrompt.trim()}
-                        className="bg-[#1677ff] hover:brightness-110 text-white rounded-[8px] h-10 px-6 shadow-sm"
-                      >
-                        {aiLoading ? (
-                          <span className="text-[14px]">AI正在生成...</span>
-                        ) : (
-                          <>
-                            <Send size={16} className="mr-2" />
-                            <span className="text-[14px]">发送</span>
-                          </>
-                        )}
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                    <Button type="button" size="sm" className="h-[38px] bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 shadow-sm">
+                      <Send size={15} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 编辑提示 */}
+            {!selectedElement && (
+              <div className="mt-6 text-center">
+                <p className="text-xs text-gray-400">点击幻灯片内的文字或元素进行编辑</p>
               </div>
             )}
           </div>
         </main>
+
+        {/* ===== 底部AI提示栏 ===== */}
+        <div className="border-t border-gray-100 bg-white px-6 py-3 shrink-0">
+          <div className="max-w-[1200px] mx-auto flex items-center gap-3">
+            <Bot size={18} className="text-primary shrink-0" />
+            <div className="flex-1 relative">
+              <input 
+                type="text"
+                placeholder="告诉 AI 你想做什么..."
+                className="w-full text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 pr-8 outline-none focus:border-primary/50 focus:bg-white transition-all placeholder:text-gray-400"
+              />
+              <Send size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
+            </div>
+            <div className="hidden lg:flex items-center gap-2">
+              {['帮我优化整体排版', '统一页面风格', '为第 3 页增加案例'].map((action) => (
+                <button key={action} type="button" className="text-[11px] whitespace-nowrap px-2.5 py-1.5 rounded-md bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all border border-gray-100">
+                  {action}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 右侧属性面板（动态切换） */}
-      {inspectorOpen && (
-        <aside className="w-[280px] bg-white border-l border-[#e8e8e8] flex flex-col shrink-0 overflow-hidden">
-          {/* 标题栏 */}
-          <div className="h-[56px] border-b border-[#e8e8e8] flex items-center justify-between px-4 shrink-0">
-            <h3 className="font-bold text-[16px] text-[#333]">
-              {selectedElement ? '元素属性' : '页面属性'}
-            </h3>
-            <Button 
-              type="button" 
-              onClick={() => setInspectorOpen(false)} 
-              variant="ghost" 
-              size="icon" 
-              className="w-8 h-8 text-[#666] hover:text-[#333]"
-            >
-              <X size={18} />
-            </Button>
-          </div>
-          
-          {/* 折叠面板内容 */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {!selectedElement ? (
-              // 未选中元素时显示页面级属性
-              <Accordion type="multiple" defaultValue={["canvas"]} className="w-full">
-                <AccordionItem value="canvas" className="border-b border-[#e8e8e8]">
-                  <AccordionTrigger className="text-[14px] font-bold text-[#333] hover:no-underline py-3 px-4 bg-[#FAFAFA]">
-                    画面
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4 px-4 pb-4">
-                    <div className="space-y-2">
-                      <Label className="text-[13px] text-[#666]">缩放</Label>
-                      <div className="flex items-center gap-2">
-                        <Input type="number" defaultValue="100" className="h-8 text-[13px]" />
-                        <span className="text-[13px] text-[#666]">%</span>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ) : selectedElement === 'text' ? (
-              // 选中文本元素时显示文本属性
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">字体</Label>
-                  <Select defaultValue="pingfang">
-                    <SelectTrigger className="h-9 text-[13px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pingfang">苹方</SelectItem>
-                      <SelectItem value="yahei">微软雅黑</SelectItem>
-                      <SelectItem value="songti">宋体</SelectItem>
-                      <SelectItem value="heiti">黑体</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">字号</Label>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      type="button"
-                      onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                    >
-                      <Minus size={16} />
-                    </Button>
-                    <Input 
-                      type="number" 
-                      value={fontSize} 
-                      onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="h-9 text-[13px] text-center" 
-                    />
-                    <Button 
-                      type="button"
-                      onClick={() => setFontSize(fontSize + 2)}
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">颜色</Label>
-                  <div className="grid grid-cols-6 gap-2">
-                    {['#FFFFFF', '#000000', '#E53935', '#1677ff', '#FFD54F', '#26a69a'].map((color) => (
-                      <div 
-                        key={color}
-                        className="w-8 h-8 rounded-md cursor-pointer border-2 border-[#e8e8e8] hover:border-primary transition-colors"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">样式</Label>
-                  <div className="flex gap-2">
-                    <Button type="button" onClick={() => {}} variant="outline" size="icon" className="h-9 w-9">
-                      <Bold size={16} />
-                    </Button>
-                    <Button type="button" onClick={() => {}} variant="outline" size="icon" className="h-9 w-9">
-                      <Italic size={16} />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">对齐</Label>
-                  <div className="flex gap-2">
-                    <Button type="button" onClick={() => {}} variant="outline" size="icon" className="h-9 w-9">
-                      <AlignLeft size={16} />
-                    </Button>
-                    <Button type="button" onClick={() => {}} variant="outline" size="icon" className="h-9 w-9">
-                      <AlignCenter size={16} />
-                    </Button>
-                    <Button type="button" onClick={() => {}} variant="outline" size="icon" className="h-9 w-9">
-                      <AlignRight size={16} />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t border-[#e8e8e8]">
-                  <Button type="button" onClick={() => {}} className="w-full bg-primary hover:brightness-110 text-white rounded-[6px] h-9">
-                    AI 改写文案
-                  </Button>
-                </div>
-              </div>
-            ) : selectedElement === 'image' ? (
-              // 选中图片元素时显示图片属性
-              <div className="space-y-6">
-                <Button type="button" onClick={() => {}} variant="outline" className="w-full h-10 gap-2">
-                  <Upload size={16} />
-                  <span>替换图片</span>
-                </Button>
-                
-                <Accordion type="multiple" defaultValue={["crop", "adjust"]} className="w-full">
-                  <AccordionItem value="crop" className="border-b border-[#e8e8e8]">
-                    <AccordionTrigger className="text-[14px] font-bold text-[#333] hover:no-underline py-3 px-4 bg-[#FAFAFA]">
-                      裁剪
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-4 px-4 pb-4">
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button type="button" onClick={() => {}} variant="outline" className="h-8 text-[12px]">自由</Button>
-                        <Button type="button" onClick={() => {}} variant="outline" className="h-8 text-[12px]">1:1</Button>
-                        <Button type="button" onClick={() => {}} variant="outline" className="h-8 text-[12px] bg-[#FFF0F0] border-primary text-primary">16:9</Button>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  
-                  <AccordionItem value="adjust" className="border-none">
-                    <AccordionTrigger className="text-[14px] font-bold text-[#333] hover:no-underline py-3 px-4 bg-[#FAFAFA]">
-                      调节
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-4 px-4 pb-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-[13px] text-[#666]">亮度</Label>
-                          <span className="text-[13px] text-[#333] font-medium">{brightness[0]}</span>
-                        </div>
-                        <Slider 
-                          value={brightness} 
-                          onValueChange={setBrightness} 
-                          min={-100} 
-                          max={100} 
-                          step={1} 
-                          className="w-full [&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-            ) : (
-              // 选中装饰元素时显示装饰属性
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">颜色</Label>
-                  <div className="grid grid-cols-6 gap-2">
-                    {['#FFFFFF', '#000000', '#E53935', '#1677ff', '#FFD54F', '#26a69a'].map((color) => (
-                      <div 
-                        key={color}
-                        className="w-8 h-8 rounded-md cursor-pointer border-2 border-[#e8e8e8] hover:border-primary transition-colors"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">大小</Label>
-                  <Slider 
-                    defaultValue={[50]} 
-                    max={100} 
-                    step={1} 
-                    className="w-full [&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
-                  />
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-[14px] font-bold text-[#333]">旋转</Label>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="0" className="h-8 text-[13px]" />
-                    <span className="text-[13px] text-[#666]">°</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-      )}
+      {/* ===== 右侧属性面板 ===== */}
+      <aside className="w-[280px] bg-white border-l border-gray-100 shrink-0 overflow-y-auto hidden lg:block">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[#333]">页面属性</h3>
+          <Button type="button" variant="ghost" size="icon" className="w-6 h-6 text-gray-400 hover:text-gray-600">
+            <X size={14} />
+          </Button>
+        </div>
 
-      {/* 底部悬浮AI助手 */}
-      <div className="fixed right-6 bottom-6 z-50">
-        <Card className="bg-white rounded-[16px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border-none overflow-hidden w-[360px]">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Bot size={20} />
-              </div>
-              <span className="font-bold text-[14px] text-[#333]">AI 智能助手</span>
+        <div className="p-4 space-y-4">
+          {/* 页面布局 */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">页面布局</h4>
+            <div className="grid grid-cols-3 gap-2">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="aspect-[4/3] rounded-md border border-gray-200 bg-gray-50 hover:border-primary/50 cursor-pointer transition-all p-1 flex items-center justify-center">
+                  <div className="w-full h-full rounded-sm bg-gray-100" style={{ clipPath: i === 1 ? 'inset(0)' : i === 2 ? 'polygon(0 0,100% 0,100% 50%,0 50%)' : 'polygon(0 0,70% 0,70% 100%,0 100%)' }} />
+                </div>
+              ))}
             </div>
-            
-            <div className="grid grid-cols-4 gap-2">
-              <Button type="button" onClick={() => { if(!selectedElement) setSelectedElement('text'); setAiPrompt('帮我写一段关于此页面的专业文案'); }} className="bg-primary hover:brightness-110 text-white text-[12px] rounded-[6px] h-8 shadow-sm px-0">
-                AI写文案
-              </Button>
-              <Button type="button" onClick={() => { if(!selectedElement) setSelectedElement('image'); setAiPrompt('帮我更换一张更具科技感的背景图'); }} className="bg-primary hover:brightness-110 text-white text-[12px] rounded-[6px] h-8 shadow-sm px-0">
-                AI换图
-              </Button>
-              <Button type="button" onClick={() => { if(!selectedElement) setSelectedElement('shape'); setAiPrompt('智能剪辑当前页面的视觉元素'); }} className="bg-primary hover:brightness-110 text-white text-[12px] rounded-[6px] h-8 shadow-sm px-0">
-                智能剪辑
-              </Button>
-              <Button type="button" onClick={() => { if(!selectedElement) setSelectedElement('text'); setAiPrompt('为当前页面配一段深沉稳重的旁白'); }} className="bg-primary hover:brightness-110 text-white text-[12px] rounded-[6px] h-8 shadow-sm px-0">
-                AI配音
-              </Button>
+            <button type="button" className="w-full mt-2 text-xs text-primary font-medium py-1.5 border border-dashed border-primary/30 rounded-lg hover:bg-red-50 transition-all">
+              + 自定义布局
+            </button>
+          </section>
+
+          {/* AI改稿 */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">AI改稿</h4>
+            <div className="flex gap-2">
+              {[
+                { label: '润色', desc: '优化文案表达' },
+                { label: '扩写', desc: '丰富内容细节' },
+                { label: '缩写', desc: '精简核心要点' },
+              ].map(item => (
+                <button key={item.label} type="button" className="flex-1 p-2 rounded-lg border border-gray-200 hover:border-primary/40 hover:bg-red-50 transition-all text-center group">
+                  <span className="text-xs font-semibold text-gray-600 group-hover:text-primary">{item.label}</span>
+                  <p className="text-[9px] text-gray-400 mt-0.5">{item.desc}</p>
+                </button>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </section>
+
+          {/* 一键换图 */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">一键换图</h4>
+            <div className="space-y-2">
+              <button type="button" className="w-full text-xs py-2 rounded-lg bg-red-50 text-primary font-medium hover:bg-red-100 transition-all">智能推荐图片</button>
+              <button type="button" className="w-full text-xs py-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all">本地上传图片</button>
+            </div>
+          </section>
+
+          {/* 样式调整 */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">样式调整</h4>
+            <div className="space-y-2">
+              {[
+                { label: '主题风格', icon: <Palette size={14} /> },
+                { label: '配色方案', icon: <Shuffle size={14} /> },
+                { label: '字体设置', icon: <Type size={14} /> },
+                { label: '背景设置', icon: <Image size={14} /> },
+              ].map(item => (
+                <button key={item.label} type="button" className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-lg border border-gray-100 text-gray-500 hover:bg-gray-50 hover:border-gray-200 transition-all">
+                  <span className="flex items-center gap-2">{item.icon}{item.label}</span>
+                  <span className="text-gray-300">&gt;</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      </aside>
     </div>
   );
 };
